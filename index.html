@@ -59,7 +59,7 @@
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-slate-800">📝 แบบฟอร์มบันทึกการทำงานประจำวัน</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">เลือกชื่อ วันที่ และกรอกผลงานรายวัน (อนุญาตย้อนหลังไม่เกิน 1 วัน)</p>
+                        <p class="text-xs text-slate-500 mt-0.5">ระบบจะตรวจสอบเวลาส่งงาน หากเกินกำหนดจะเปลี่ยนสถานะเป็น <span class="text-rose-600 font-bold">"ล่าช้า/มีปัญหา"</span> อัตโนมัติ</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-xs">
                         <div class="flex items-center gap-2">
@@ -93,7 +93,7 @@
                                 <th class="px-4 py-3">รายละเอียดหัวข้องาน</th>
                                 <th class="px-3 py-3 text-center w-24">ความถี่</th>
                                 <th class="px-4 py-3 text-center w-32 bg-indigo-700">ผลงานรายวันนี้ (%)</th>
-                                <th class="px-4 py-3 text-center w-28">สถานะงาน</th>
+                                <th class="px-4 py-3 text-center w-32">สถานะงาน</th>
                                 <th class="px-4 py-3">หมายเหตุ / ปัญหาที่พบ</th>
                                 <th id="adminColHeader" class="px-2 py-3 text-center w-12 hidden">จัดการ</th>
                             </tr>
@@ -391,28 +391,57 @@
             ]
         };
 
-        let kpiMatrix = [];
+        // Default KPI Matrix data to prevent empty table
+        let kpiMatrix = [
+            { employee: "หมิว", seq: 1, topic: "ส่งมอบรายงานตามกำหนดและถูกต้อง", weight: 30, target: 95 },
+            { employee: "หมิว", seq: 2, topic: "ประสิทธิภาพการวางแผนผลิตประจำวัน", weight: 40, target: 90 },
+            { employee: "หมิว", seq: 3, topic: "ความถูกต้องของการตัด Picking list", weight: 30, target: 95 },
+            { employee: "เฟิน", seq: 1, topic: "ส่งมอบรายงาน Reported as finished ตรงเวลา", weight: 30, target: 95 },
+            { employee: "เฟิน", seq: 2, topic: "การขอซื้อวัตถุดิบไม่ให้ขาดไลน์ผลิต", weight: 40, target: 95 },
+            { employee: "เฟิน", seq: 3, topic: "การตรวจสอบพนักงาน on tablet", weight: 30, target: 90 },
+            { employee: "หมิง", seq: 1, topic: "การดึงข้อมูล On Tablet ครบถ้วน", weight: 30, target: 95 },
+            { employee: "หมิง", seq: 2, topic: "วางแผนงานล่วงหน้าแบบ Realtime", weight: 40, target: 90 },
+            { employee: "หมิง", seq: 3, topic: "การทำเบิกอะไหล่ประกอบล่วงหน้า", weight: 30, target: 95 },
+            { employee: "วาวา", seq: 1, topic: "ส่งมอบงานซ่อมและรายงานตรงเวลา", weight: 30, target: 95 },
+            { employee: "วาวา", seq: 2, topic: "วางแผนงานท่อและตรวจสอบสูตรถูกต้อง", weight: 40, target: 95 },
+            { employee: "วาวา", seq: 3, topic: "การสรุปชั่วโมงงานและปัญหาหน้างาน", weight: 30, target: 90 }
+        ];
+
         let evaluations = {};
         let dailyLogs = {};
+
+        // Parse time range string e.g. "18.00-18.30" or "18.00 เป็นต้นไป" to get end hour/minute
+        function parseEndTime(timeStr) {
+            if (!timeStr) return { hour: 23, minute: 59 };
+            let parts = timeStr.split('-');
+            let endPart = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+            if (endPart.includes('เป็นต้นไป') || endPart.includes('เลิกงาน')) {
+                return { hour: 20, minute: 0 };
+            }
+            let timeNums = endPart.split('.');
+            let h = parseInt(timeNums[0]) || 18;
+            let m = parseInt(timeNums[1]) || 0;
+            return { hour: h, minute: m };
+        }
 
         // Fetch Data from Google Sheets
         async function fetchSheetData(manual = false) {
             const statusEl = document.getElementById('syncStatus');
             if(statusEl) statusEl.innerText = "(กำลังซิงค์...)";
             try {
-                // Add timestamp to bypass caching
                 const timestamp = new Date().getTime();
                 const response = await fetch(`${API_URL}?action=getData&_=${timestamp}`);
                 const result = await response.json();
                 
                 if(result.matrix && result.matrix.length > 1) {
-                    kpiMatrix = [];
+                    let loadedMatrix = [];
                     for(let i = 1; i < result.matrix.length; i++) {
                         let row = result.matrix[i];
                         if(row[0]) {
-                            kpiMatrix.push({ employee: row[0], seq: row[1], topic: row[2], weight: row[3], target: row[4] });
+                            loadedMatrix.push({ employee: row[0], seq: row[1], topic: row[2], weight: row[3], target: row[4] });
                         }
                     }
+                    if(loadedMatrix.length > 0) kpiMatrix = loadedMatrix;
                 }
                 
                 if(result.dailyLogs && result.dailyLogs.length > 1) {
@@ -614,8 +643,27 @@
                 return;
             }
 
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const isToday = (date === todayStr);
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+
             tasks.forEach((t, index) => {
-                const item = savedData[t.task] || { actual: '', status: 'เรียบร้อย', note: '' };
+                let item = savedData[t.task];
+                
+                // Auto set status to "มีปัญหา/ล่าช้า" if past the scheduled task end time and no input/not completed yet on current day
+                if (!item && isToday) {
+                    let deadline = parseEndTime(t.time);
+                    if (currentHour > deadline.hour || (currentHour === deadline.hour && currentMinute > deadline.minute)) {
+                        item = { actual: '', status: 'มีปัญหา/ล่าช้า', note: 'ระบบตั้งให้อัตโนมัติ: เลยเวลาตามกำหนด' };
+                    }
+                }
+
+                if (!item) {
+                    item = { actual: '', status: 'เรียบร้อย', note: '' };
+                }
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50" data-index="${index}">
                         <td class="px-2 py-2 text-center font-bold text-indigo-700">${t.time}</td>
@@ -625,7 +673,7 @@
                             <input type="number" min="0" max="100" value="${item.actual}" class="daily-actual w-20 text-center bg-white border border-slate-300 rounded-md py-1 text-xs font-bold text-indigo-700" placeholder="0-100">
                         </td>
                         <td class="px-3 py-2 text-center">
-                            <select class="daily-status bg-white border border-slate-300 rounded-md py-1 px-1.5 text-xs cursor-pointer">
+                            <select class="daily-status bg-white border border-slate-300 rounded-md py-1 px-1.5 text-xs cursor-pointer ${item.status === 'มีปัญหา/ล่าช้า' ? 'text-rose-600 font-bold' : ''}">
                                 <option value="เรียบร้อย" ${item.status === 'เรียบร้อย' ? 'selected' : ''}>✅ เรียบร้อย</option>
                                 <option value="มีปัญหา/ล่าช้า" ${item.status === 'มีปัญหา/ล่าช้า' ? 'selected' : ''}>⚠️ ล่าช้า/มีปัญหา</option>
                                 <option value="ไม่ได้ทำ/ติดงานอื่น" ${item.status === 'ไม่ได้ทำ/ติดงานอื่น' ? 'selected' : ''}>❌ ไม่ได้ทำ</option>
@@ -671,6 +719,7 @@
             syncDataToSheet('saveDaily', { key: key, user: user, date: date, records: dayRecord });
             alert(`บันทึกข้อมูลการทำงานประจำวันที่ ${date} ของคุณ${user} เรียบร้อยแล้ว!`);
             loadDailyHistory();
+            updateDashboard();
         }
 
         function loadDailyHistory() {
