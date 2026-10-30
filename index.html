@@ -21,12 +21,14 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold">ระบบบันทึกงานรายวัน & KPI แผนก Planning</h1>
-                    <p class="text-xs text-indigo-200">บันทึกการทำงานส่วนบุคคล และประเมินผลงานอัตโนมัติ</p>
+                    <p class="text-xs text-indigo-200">เชื่อมต่อ Google Sheets แบบ Real-time <span id="syncStatus" class="ml-2 font-normal text-amber-300">(กำลังดึงข้อมูล...)</span></p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <!-- Admin Login Status Badge -->
+                <button onclick="fetchSheetData(true)" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1 cursor-pointer shadow-xs">
+                    🔄 ดึงข้อมูลล่าสุด
+                </button>
                 <div class="flex items-center gap-2 bg-indigo-900/60 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs">
                     <span id="authIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                     <span id="authText" class="font-medium text-indigo-100">โหมดพนักงานทั่วไป</span>
@@ -57,13 +59,12 @@
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-slate-800">📝 แบบฟอร์มบันทึกการทำงานประจำวัน</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">เลือกชื่อตนเอง วันที่ และกรอกผลการทำงานรายวัน (อนุญาตให้กรอกย้อนหลังได้ไม่เกิน 1 วัน)</p>
+                        <p class="text-xs text-slate-500 mt-0.5">เลือกชื่อ วันที่ และกรอกผลงานรายวัน (อนุญาตย้อนหลังไม่เกิน 1 วัน)</p>
                     </div>
-                    <!-- User & Date Selector -->
                     <div class="flex flex-wrap items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-xs">
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">ผู้บันทึก:</label>
-                            <select id="dailyUser" onchange="loadDailyForm()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            <select id="dailyUser" onchange="loadDailyForm()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none cursor-pointer">
                                 <option value="หมิว">หมิว</option>
                                 <option value="เฟิน">เฟิน</option>
                                 <option value="หมิง">หมิง</option>
@@ -72,12 +73,11 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">วันที่:</label>
-                            <input type="date" id="dailyDate" onchange="validateAndLoadDailyDate()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            <input type="date" id="dailyDate" onchange="validateAndLoadDailyDate()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none cursor-pointer">
                         </div>
                     </div>
                 </div>
 
-                <!-- Add Task Action Bar (Admin Only) -->
                 <div id="adminTaskActionBar" class="flex justify-between items-center mb-3 hidden">
                     <span class="text-xs font-bold text-slate-600">รายการภาระงานประจำวัน (โหมดแอดมินแก้ไขได้):</span>
                     <button onclick="addNewTaskRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer shadow-xs">
@@ -85,7 +85,6 @@
                     </button>
                 </div>
 
-                <!-- Form Table -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
@@ -103,16 +102,14 @@
                     </table>
                 </div>
 
-                <!-- Submit Bar -->
                 <div class="mt-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p class="text-xs text-amber-700 font-medium">🔒 * ระบบไม่อนุญาตให้กรอกหรือแก้ไขข้อมูลย้อนหลังเกิน 1 วัน</p>
-                    <button onclick="saveDailyLog()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-xl shadow-xs transition text-xs flex items-center gap-2 cursor-pointer">
+                    <button onclick="saveDailyLog()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-xs transition text-xs flex items-center gap-2 cursor-pointer">
                         💾 บันทึกข้อมูลการทำงานประจำวัน
                     </button>
                 </div>
             </div>
 
-            <!-- Recent History Log Table -->
             <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
                 <h3 class="text-base font-bold text-slate-800 mb-4">📋 ประวัติการบันทึกงานย้อนหลัง</h3>
                 <div class="overflow-x-auto">
@@ -330,8 +327,146 @@
     </div>
 
     <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwYPvK_QWB03G7vfOb3vRu6JWeMxUR-Pdf4ufD-o2ptc1zxWI5vVITEjX9hUI02rgl2/exec";
         let isAdmin = localStorage.getItem('planning_is_admin') === 'true';
         const ADMIN_SECRET_CODE = "admin1234";
+
+        let dailyTaskTemplates = {
+            "หมิว": [
+                { time: "8.00-9.00", task: "ส่งมอบReported as finished M315011 (ก็อกน้ำ+สุขภัณฑ์)", freq: "ทุกวัน" },
+                { time: "9.00-9.30", task: "ดึงรายงานการส่งมอบ", freq: "ทุก 1 ชม." },
+                { time: "9.30-10.00", task: "เอกสารหาแม่พิมพ์+เรียงเอกสารตามใบสั่งงานที่หาพิมพ์", freq: "ทุกวัน" },
+                { time: "10.00-10.30", task: "วางแผน PG ขั้นตอน 10+เช็ควัตถุดิบ", freq: "ตามรอบ" },
+                { time: "10.30-11.00", task: "ตรวจสอบแผนรายการค้างเบิกแผนประกอบ", freq: "ตามรอบ" },
+                { time: "11.00-12.00", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
+                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "14.00-15.00", task: "รายการซอยแผ่นประจำวัน/ปริ้นใบสั่งงาน", freq: "ตามรอบ" },
+                { time: "15.00-16.00", task: "ปรับแผนประจำวัน", freq: "ก่อนเลิกงาน" },
+                { time: "16.00-17.00", task: "วางแผนวันถัดไปหน่วยงาน AS,CM,AL,AG,AGM,PG,TS", freq: "ทุกวัน" },
+                { time: "17.00-18.00", task: "ทำเบิกอะไหล่ประกอบก๊อกน้ำ+สุขภัณฑ์", freq: "ทุกวัน" },
+                { time: "18.00-18.30", task: "ตัดPicking list", freq: "ทุกวัน" },
+                { time: "18.30-19.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ทุกวัน" }
+            ],
+            "เฟิน": [
+                { time: "8.00-8.30", task: "ส่งมอบReported as finished M315012 (ตะแกรง) M315022 (กล่อง)", freq: "ทุกวัน" },
+                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (PC, BX1, PVC, UV, CC1, SPW1, FS, FK, PS)", freq: "ทุกวัน" },
+                { time: "9.00-11.00", task: "ขอซื้อวัตถุดิบหมวด W V X ในประเทศ / ต่างประเทศ", freq: "ทุกวัน" },
+                { time: "11.00-11.15", task: "ตรวจสอบสติ๊กเกอร์บาร์โค้ต", freq: "ตามรอบ" },
+                { time: "11.15-12.00", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "13.00-13.30", task: "ตรวจสอบพนักงาน on tablet", freq: "ตามรอบ" },
+                { time: "14.00-15.00", task: "วางแผนล่วงหน้า BX PVC CC1 SPW1 PC UV", freq: "ทุกวัน" },
+                { time: "15.00-15.30", task: "เบิกกระดาษ PVC เม็ด สี ลวด", freq: "ตามรอบ" },
+                { time: "15.30-16.30", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "16.30-17.00", task: "ส่งมอบReported as finished งานฉีดเข้าสโตร์", freq: "ทุกวัน" },
+                { time: "17.00-17.30", task: "ทำเบิกอะไหล่ประกอบตะแกรง +วางแผนล่วงหน้า PS FS FK", freq: "ตามรอบ" },
+                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "18.00 เป็นต้นไป", task: "ตัดPicking list / ส่งมอบงานผลิตในระบบ / การปรับแผนประจำวัน", freq: "ทุกวัน" }
+            ],
+            "หมิง": [
+                { time: "8.00-9.00", task: "ดึง On Tablet ของพนักงานทุกหน่วยงาน (PL, DL, HT, SU, MC, MCA, WZ)", freq: "ทุกวัน" },
+                { time: "9.00-10.00", task: "วางแผนงานล่วงหน้าแบบ Realtime ตามรุ่น FG ที่โฟกัส", freq: "ตามรอบ" },
+                { time: "10.00-11.00", task: "ติดตามหน้างานตามรายการ โฟกัส", freq: "ทุก 1 ชม." },
+                { time: "11.00-12.00", task: "ทำเบิกอะไหล่ประกอบล่วงหน้า 3 วัน", freq: "ทุกวัน" },
+                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ทุกวัน" },
+                { time: "16.30-17.00", task: "วางแผนวันถัดไปหน่วยงาน PL DL HT SU MC MCA WZ", freq: "ตามรอบ" },
+                { time: "17.00-18.00", task: "การปรับแผนประจำวัน", freq: "ทุกวัน" },
+                { time: "18.00-18.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "งานประจำวัน", task: "เคลียร์ PD Acc_Cost / ส่งมอบงานผลิตในระบบ ตามที่ผลิตแจ้ง", freq: "ทุกวัน" }
+            ],
+            "วาวา": [
+                { time: "8.00-8.30", task: "ส่งมอบReported as finished แผน 9 งานซ่อม", freq: "ทุกวัน" },
+                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (ML, B, CL, CT, CN)", freq: "ทุก 1 ชม." },
+                { time: "9.00-10.30", task: "วางแผนล่วงหน้า CT,CL,CB ขั้นตอน10+ตรวจสอบสูตร", freq: "ตามรอบ" },
+                { time: "10.30-11.00", task: "ทำเบิกท่อ+ตรวจสอบรายการเศษ", freq: "ตามรอบ" },
+                { time: "11.00-11.30", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
+                { time: "11.30-12.00", task: "ขอซื้อวัตถุดิบหมวด U", freq: "ทุกวัน" },
+                { time: "13.00-13.30", task: "ทำเบิกอะไหล่ประกอบแผน 9 งานซ่อม", freq: "ทุกวัน" },
+                { time: "13.30-14.30", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "14.30-16.00", task: "ใส่สูตรแผนประกอบงานซ่อม", freq: "ก่อนเลิกงาน" },
+                { time: "16.00-16.30", task: "ปริ้นใบสั่งงาน+เขียนความหนาท่อ", freq: "ตามรอบ" },
+                { time: "16.30-17.00", task: "ปรับแผนประจำวัน", freq: "ทุกวัน" },
+                { time: "17.00-17.30", task: "วางแผนวันถัดไปหน่วยงาน B ML CN DL", freq: "ทุกวัน" },
+                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "18.00-18.30", task: "ประชุมท่อ กับฝ่ายผลิต+วิจัย / ตัดPicking list / ตรวจสอบเวลางานผลิต", freq: "ทุกวัน" }
+            ]
+        };
+
+        let kpiMatrix = [];
+        let evaluations = {};
+        let dailyLogs = {};
+
+        // Fetch Data from Google Sheets
+        async function fetchSheetData(manual = false) {
+            const statusEl = document.getElementById('syncStatus');
+            if(statusEl) statusEl.innerText = "(กำลังซิงค์...)";
+            try {
+                // Add timestamp to bypass caching
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${API_URL}?action=getData&_=${timestamp}`);
+                const result = await response.json();
+                
+                if(result.matrix && result.matrix.length > 1) {
+                    kpiMatrix = [];
+                    for(let i = 1; i < result.matrix.length; i++) {
+                        let row = result.matrix[i];
+                        if(row[0]) {
+                            kpiMatrix.push({ employee: row[0], seq: row[1], topic: row[2], weight: row[3], target: row[4] });
+                        }
+                    }
+                }
+                
+                if(result.dailyLogs && result.dailyLogs.length > 1) {
+                    dailyLogs = {};
+                    for(let i = 1; i < result.dailyLogs.length; i++) {
+                        let row = result.dailyLogs[i];
+                        if(row[0]) {
+                            try { dailyLogs[row[0]] = JSON.parse(row[3]); } catch(e){}
+                        }
+                    }
+                }
+
+                if(result.evaluations && result.evaluations.length > 1) {
+                    evaluations = {};
+                    for(let i = 1; i < result.evaluations.length; i++) {
+                        let row = result.evaluations[i];
+                        if(row[0]) {
+                            try { evaluations[row[0]] = JSON.parse(row[3]); } catch(e){}
+                        }
+                    }
+                }
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                if(statusEl) statusEl.innerText = `(เชื่อมต่อสำเร็จ - ${timeStr})`;
+                if(manual) alert('🔄 ดึงข้อมูลล่าสุดจาก Google Sheets เรียบร้อยแล้ว!');
+
+            } catch(e) {
+                console.log('Error fetching sheet data:', e);
+                if(statusEl) statusEl.innerText = "(เชื่อมต่อขัดข้อง)";
+            }
+
+            loadDailyForm();
+            renderMatrixTable();
+            updateDashboard();
+        }
+
+        async function syncDataToSheet(actionType, payload) {
+            const statusEl = document.getElementById('syncStatus');
+            if(statusEl) statusEl.innerText = "(กำลังบันทึก...)";
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(Object.assign({ action: actionType }, payload))
+                });
+                setTimeout(() => {
+                    fetchSheetData();
+                }, 1000);
+            } catch(e) {
+                console.log('Sync error', e);
+            }
+        }
 
         function toggleAuthModal() {
             if (isAdmin) {
@@ -403,102 +538,6 @@
                 if (activeTab === 'matrix') renderMatrixTable();
             }
         }
-
-        const defaultDailyTaskTemplates = {
-            "หมิว": [
-                { time: "8.00-9.00", task: "ส่งมอบReported as finished M315011 (ก็อกน้ำ+สุขภัณฑ์)", freq: "ทุกวัน" },
-                { time: "9.00-9.30", task: "ดึงรายงานการส่งมอบ", freq: "ทุก 1 ชม." },
-                { time: "9.30-10.00", task: "เอกสารหาแม่พิมพ์+เรียงเอกสารตามใบสั่งงานที่หาพิมพ์", freq: "ทุกวัน" },
-                { time: "10.00-10.30", task: "วางแผน PG ขั้นตอน 10+เช็ควัตถุดิบ", freq: "ตามรอบ" },
-                { time: "10.30-11.00", task: "ตรวจสอบแผนรายการค้างเบิกแผนประกอบ", freq: "ตามรอบ" },
-                { time: "11.00-12.00", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
-                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
-                { time: "14.00-15.00", task: "รายการซอยแผ่นประจำวัน/ปริ้นใบสั่งงาน", freq: "ตามรอบ" },
-                { time: "15.00-16.00", task: "ปรับแผนประจำวัน", freq: "ก่อนเลิกงาน" },
-                { time: "16.00-17.00", task: "วางแผนวันถัดไปหน่วยงาน AS,CM,AL,AG,AGM,PG,TS", freq: "ทุกวัน" },
-                { time: "17.00-18.00", task: "ทำเบิกอะไหล่ประกอบก๊อกน้ำ+สุขภัณฑ์", freq: "ทุกวัน" },
-                { time: "18.00-18.30", task: "ตัดPicking list", freq: "ทุกวัน" },
-                { time: "18.30-19.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ทุกวัน" }
-            ],
-            "เฟิน": [
-                { time: "8.00-8.30", task: "ส่งมอบReported as finished M315012 (ตะแกรง) M315022 (กล่อง)", freq: "ทุกวัน" },
-                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (PC, BX1, PVC, UV, CC1, SPW1, FS, FK, PS)", freq: "ทุกวัน" },
-                { time: "9.00-11.00", task: "ขอซื้อวัตถุดิบหมวด W V X ในประเทศ / ต่างประเทศ", freq: "ทุกวัน" },
-                { time: "11.00-11.15", task: "ตรวจสอบสติ๊กเกอร์บาร์โค้ต", freq: "ตามรอบ" },
-                { time: "11.15-12.00", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
-                { time: "13.00-13.30", task: "ตรวจสอบพนักงาน on tablet", freq: "ตามรอบ" },
-                { time: "14.00-15.00", task: "วางแผนล่วงหน้า BX PVC CC1 SPW1 PC UV", freq: "ทุกวัน" },
-                { time: "15.00-15.30", task: "เบิกกระดาษ PVC เม็ด สี ลวด", freq: "ตามรอบ" },
-                { time: "15.30-16.30", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
-                { time: "16.30-17.00", task: "ส่งมอบReported as finished งานฉีดเข้าสโตร์", freq: "ทุกวัน" },
-                { time: "17.00-17.30", task: "ทำเบิกอะไหล่ประกอบตะแกรง +วางแผนล่วงหน้า PS FS FK", freq: "ตามรอบ" },
-                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
-                { time: "18.00 เป็นต้นไป", task: "ตัดPicking list / ส่งมอบงานผลิตในระบบ / การปรับแผนประจำวัน", freq: "ทุกวัน" }
-            ],
-            "หมิง": [
-                { time: "8.00-9.00", task: "ดึง On Tablet ของพนักงานทุกหน่วยงาน (PL, DL, HT, SU, MC, MCA, WZ)", freq: "ทุกวัน" },
-                { time: "9.00-10.00", task: "วางแผนงานล่วงหน้าแบบ Realtime ตามรุ่น FG ที่โฟกัส", freq: "ตามรอบ" },
-                { time: "10.00-11.00", task: "ติดตามหน้างานตามรายการ โฟกัส", freq: "ทุก 1 ชม." },
-                { time: "11.00-12.00", task: "ทำเบิกอะไหล่ประกอบล่วงหน้า 3 วัน", freq: "ทุกวัน" },
-                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ทุกวัน" },
-                { time: "16.30-17.00", task: "วางแผนวันถัดไปหน่วยงาน PL DL HT SU MC MCA WZ", freq: "ตามรอบ" },
-                { time: "17.00-18.00", task: "การปรับแผนประจำวัน", freq: "ทุกวัน" },
-                { time: "18.00-18.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
-                { time: "งานประจำวัน", task: "เคลียร์ PD Acc_Cost / ส่งมอบงานผลิตในระบบ ตามที่ผลิตแจ้ง", freq: "ทุกวัน" }
-            ],
-            "วาวา": [
-                { time: "8.00-8.30", task: "ส่งมอบReported as finished แผน 9 งานซ่อม", freq: "ทุกวัน" },
-                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (ML, B, CL, CT, CN)", freq: "ทุก 1 ชม." },
-                { time: "9.00-10.30", task: "วางแผนล่วงหน้า CT,CL,CB ขั้นตอน10+ตรวจสอบสูตร", freq: "ตามรอบ" },
-                { time: "10.30-11.00", task: "ทำเบิกท่อ+ตรวจสอบรายการเศษ", freq: "ตามรอบ" },
-                { time: "11.00-11.30", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
-                { time: "11.30-12.00", task: "ขอซื้อวัตถุดิบหมวด U", freq: "ทุกวัน" },
-                { time: "13.00-13.30", task: "ทำเบิกอะไหล่ประกอบแผน 9 งานซ่อม", freq: "ทุกวัน" },
-                { time: "13.30-14.30", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
-                { time: "14.30-16.00", task: "ใส่สูตรแผนประกอบงานซ่อม", freq: "ก่อนเลิกงาน" },
-                { time: "16.00-16.30", task: "ปริ้นใบสั่งงาน+เขียนความหนาท่อ", freq: "ตามรอบ" },
-                { time: "16.30-17.00", task: "ปรับแผนประจำวัน", freq: "ทุกวัน" },
-                { time: "17.00-17.30", task: "วางแผนวันถัดไปหน่วยงาน B ML CN DL", freq: "ทุกวัน" },
-                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
-                { time: "18.00-18.30", task: "ประชุมท่อ กับฝ่ายผลิต+วิจัย / ตัดPicking list / ตรวจสอบเวลางานผลิต", freq: "ทุกวัน" }
-            ]
-        };
-
-        const defaultKpiMatrix = [
-            { employee: 'หมิว', seq: 1, topic: 'ติดตามสถานะงานในไลน์/On Tablet ตามรอบ', weight: 20, target: 95 },
-            { employee: 'หมิว', seq: 2, topic: 'ติดตามชั่วโมงผลิตเทียบเป้าหมาย', weight: 20, target: 100 },
-            { employee: 'หมิว', seq: 3, topic: 'ความพร้อมของแผนวันถัดไปและการปรับแผน', weight: 20, target: 95 },
-            { employee: 'หมิว', seq: 4, topic: 'ความพร้อมวัตถุดิบ/อะไหล่/Picking list', weight: 15, target: 95 },
-            { employee: 'หมิว', seq: 5, topic: 'ความถูกต้องของการส่งมอบในระบบ', weight: 15, target: 98 },
-            { employee: 'หมิว', seq: 6, topic: 'ความครบถ้วนของรายงานและการประสานงาน', weight: 10, target: 95 },
-            
-            { employee: 'เฟิน', seq: 1, topic: 'ตรวจสอบ On Tablet/สถานะกำลังคนหน่วยงาน', weight: 15, target: 95 },
-            { employee: 'เฟิน', seq: 2, topic: 'ติดตามชั่วโมงผลิตและสุ่มตรวจสอบเวลาผลิต', weight: 20, target: 100 },
-            { employee: 'เฟิน', seq: 3, topic: 'วางแผนล่วงหน้าและความพร้อมวัตถุดิบ', weight: 20, target: 95 },
-            { employee: 'เฟิน', seq: 4, topic: 'ส่งมอบงาน/Reported as finished ในระบบ', weight: 15, target: 98 },
-            { employee: 'เฟิน', seq: 5, topic: 'การเบิกวัสดุและ Picking list', weight: 15, target: 98 },
-            { employee: 'เฟิน', seq: 6, topic: 'ปรับแผนและสรุปชั่วโมง/รายงานประจำวัน', weight: 15, target: 95 },
-
-            { employee: 'หมิง', seq: 1, topic: 'ติดตามหน้างานตามรายการโฟกัสทุกชั่วโมง', weight: 25, target: 95 },
-            { employee: 'หมิง', seq: 2, topic: 'ตรวจสอบ On Tablet และสุ่มตรวจเวลาผลิต', weight: 20, target: 95 },
-            { employee: 'หมิง', seq: 3, topic: 'วางแผนล่วงหน้าแบบ Realtime ตาม FG Focus', weight: 20, target: 95 },
-            { employee: 'หมิง', seq: 4, topic: 'ติดตามชั่วโมงผลิตเทียบเป้าหมายและวิเคราะห์สาเหตุ', weight: 15, target: 100 },
-            { employee: 'หมิง', seq: 5, topic: 'แผนวันถัดไปและความพร้อมอะไหล่ประกอบ', weight: 10, target: 95 },
-            { employee: 'หมิง', seq: 6, topic: 'ความถูกต้องของข้อมูลระบบ/การเคลียร์ PD Acc_Cost', weight: 10, target: 98 },
-
-            { employee: 'วาวา', seq: 1, topic: 'ติดตาม On Tablet และสถานะงานหน่วยงานที่รับผิดชอบ', weight: 20, target: 95 },
-            { employee: 'วาวา', seq: 2, topic: 'ติดตามชั่วโมงผลิตและสุ่มตรวจสอบเวลาผลิต', weight: 15, target: 100 },
-            { employee: 'วาวา', seq: 3, topic: 'วางแผน CT/CL/CB และตรวจสอบสูตร', weight: 20, target: 95 },
-            { employee: 'วาวา', seq: 4, topic: 'ความพร้อมท่อ วัตถุดิบ อะไหล่ และ Picking list', weight: 15, target: 95 },
-            { employee: 'วาวา', seq: 5, topic: 'ปรับแผนและจัดทำแผนวันถัดไป', weight: 10, target: 95 },
-            { employee: 'วาวา', seq: 6, topic: 'ส่งมอบงานในระบบ/Reported as finished', weight: 10, target: 98 },
-            { employee: 'วาวา', seq: 7, topic: 'ประสานงานท่อกับฝ่ายผลิตและวิจัย', weight: 10, target: 95 }
-        ];
-
-        let dailyTaskTemplates = JSON.parse(localStorage.getItem('planning_daily_templates')) || defaultDailyTaskTemplates;
-        let kpiMatrix = JSON.parse(localStorage.getItem('planning_kpi_matrix')) || defaultKpiMatrix;
-        let evaluations = JSON.parse(localStorage.getItem('planning_evaluations')) || {};
-        let dailyLogs = JSON.parse(localStorage.getItem('planning_daily_logs')) || {};
 
         function switchTab(tabId) {
             ['daily', 'dashboard', 'evaluation', 'matrix'].forEach(t => {
@@ -579,15 +618,9 @@
                 const item = savedData[t.task] || { actual: '', status: 'เรียบร้อย', note: '' };
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50" data-index="${index}">
-                        <td class="px-2 py-2 text-center font-bold text-indigo-700">
-                            ${isAdmin ? `<input type="text" value="${t.time}" onchange="updateTaskMeta('${user}', ${index}, 'time', this.value)" class="w-full text-center bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-0.5">` : t.time}
-                        </td>
-                        <td class="px-3 py-2 font-semibold text-slate-800">
-                            ${isAdmin ? `<input type="text" value="${t.task}" onchange="updateTaskMeta('${user}', ${index}, 'task', this.value)" class="task-title-input w-full bg-transparent border border-transparent hover:border-slate-300 rounded px-1.5 py-0.5">` : `<span class="task-title-input">${t.task}</span>`}
-                        </td>
-                        <td class="px-2 py-2 text-center text-slate-600">
-                            ${isAdmin ? `<input type="text" value="${t.freq}" onchange="updateTaskMeta('${user}', ${index}, 'freq', this.value)" class="w-full text-center bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-0.5">` : t.freq}
-                        </td>
+                        <td class="px-2 py-2 text-center font-bold text-indigo-700">${t.time}</td>
+                        <td class="px-3 py-2 font-semibold text-slate-800"><span class="task-title-input">${t.task}</span></td>
+                        <td class="px-2 py-2 text-center text-slate-600">${t.freq}</td>
                         <td class="px-4 py-2 text-center bg-indigo-50/40">
                             <input type="number" min="0" max="100" value="${item.actual}" class="daily-actual w-20 text-center bg-white border border-slate-300 rounded-md py-1 text-xs font-bold text-indigo-700" placeholder="0-100">
                         </td>
@@ -601,37 +634,10 @@
                         <td class="px-3 py-2">
                             <input type="text" value="${item.note}" class="daily-note w-full bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs" placeholder="บันทึกรายละเอียด / ปัญหา / สาเหตุ">
                         </td>
-                        ${isAdmin ? `<td class="px-2 py-2 text-center"><button onclick="removeTaskRow('${user}', ${index})" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition cursor-pointer" title="ลบหัวข้อ">🗑️</button></td>` : ''}
                     </tr>
                 `;
             });
             loadDailyHistory();
-        }
-
-        function addNewTaskRow() {
-            if (!isAdmin) return;
-            const user = document.getElementById('dailyUser').value;
-            if (!dailyTaskTemplates[user]) dailyTaskTemplates[user] = [];
-            dailyTaskTemplates[user].push({ time: "ตามช่วงเวลา", task: "ระบุหัวข้องานใหม่", freq: "ทุกวัน" });
-            localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
-            loadDailyForm();
-        }
-
-        function removeTaskRow(user, index) {
-            if (!isAdmin) return;
-            if (confirm('คุณต้องการลบหัวข้องานนี้ใช่หรือไม่?')) {
-                dailyTaskTemplates[user].splice(index, 1);
-                localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
-                loadDailyForm();
-            }
-        }
-
-        function updateTaskMeta(user, index, key, value) {
-            if (!isAdmin) return;
-            if (dailyTaskTemplates[user] && dailyTaskTemplates[user][index]) {
-                dailyTaskTemplates[user][index][key] = value;
-                localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
-            }
         }
 
         function saveDailyLog() {
@@ -653,7 +659,7 @@
             document.querySelectorAll('#dailyFormBody tr').forEach(row => {
                 const titleEl = row.querySelector('.task-title-input');
                 if (titleEl) {
-                    const task = titleEl.value || titleEl.innerText;
+                    const task = titleEl.innerText;
                     const actual = row.querySelector('.daily-actual').value;
                     const status = row.querySelector('.daily-status').value;
                     const note = row.querySelector('.daily-note').value;
@@ -662,7 +668,7 @@
             });
 
             dailyLogs[key] = dayRecord;
-            localStorage.setItem('planning_daily_logs', JSON.stringify(dailyLogs));
+            syncDataToSheet('saveDaily', { key: key, user: user, date: date, records: dayRecord });
             alert(`บันทึกข้อมูลการทำงานประจำวันที่ ${date} ของคุณ${user} เรียบร้อยแล้ว!`);
             loadDailyHistory();
         }
@@ -708,7 +714,7 @@
                         <td class="px-4 py-2 text-center">${count} / ${tasks.length} หัวข้อ</td>
                         <td class="px-4 py-2 text-center font-bold text-indigo-600">${avgActual}%</td>
                         <td class="px-4 py-2 text-center">
-                            ${isEditable ? `<button onclick="editDailyLog('${date}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md text-[11px] cursor-pointer">✏️ แก้ไข</button>` : `<span class="text-slate-400 text-[11px]">ล็อกแล้ว</span>`}
+                            ${isEditable ? `<button onclick="editDailyLog('${date}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md text-[11px] cursor-pointer">✏️ ดู/แก้ไข</button>` : `<span class="text-slate-400 text-[11px]">ล็อกแล้ว</span>`}
                         </td>
                     </tr>
                 `;
@@ -720,7 +726,6 @@
             validateAndLoadDailyDate();
         }
 
-        // --- KPI MATRIX MANAGEMENT (EDIT WEIGHT, TARGET, TOPIC) ---
         function renderMatrixTable() {
             const filterEmpEl = document.getElementById('matrixFilterEmp');
             const filterEmp = filterEmpEl ? filterEmpEl.value : 'all';
@@ -754,7 +759,7 @@
             if (!isAdmin) return;
             if (kpiMatrix[index]) {
                 kpiMatrix[index][field] = value;
-                localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+                syncDataToSheet('saveMatrix', { matrix: kpiMatrix });
             }
         }
 
@@ -785,7 +790,7 @@
             }
 
             kpiMatrix.push({ employee, seq, topic, weight, target });
-            localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+            syncDataToSheet('saveMatrix', { matrix: kpiMatrix });
             closeKpiModal();
             renderMatrixTable();
             alert('เพิ่มหัวข้อ KPI สำเร็จ!');
@@ -795,7 +800,7 @@
             if (!isAdmin) return;
             if (confirm('คุณต้องการลบหัวข้อ KPI นี้ใช่หรือไม่?')) {
                 kpiMatrix.splice(index, 1);
-                localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+                syncDataToSheet('saveMatrix', { matrix: kpiMatrix });
                 renderMatrixTable();
             }
         }
@@ -965,7 +970,7 @@
             });
 
             evaluations[key] = { evaluator, items };
-            localStorage.setItem('planning_evaluations', JSON.stringify(evaluations));
+            syncDataToSheet('saveEval', { key: key, employee: emp, period: period, evalData: evaluations[key] });
             alert(`บันทึกผลสรุปรายเดือนของ ${emp} ประจำเดือน ${period} เรียบร้อยแล้ว!`);
             switchTab('dashboard');
         }
@@ -973,7 +978,8 @@
         window.onload = function() {
             setDateLimits();
             updateAuthUI();
-            switchTab('matrix');
+            fetchSheetData();
+            switchTab('daily');
         };
     </script>
 </body>
