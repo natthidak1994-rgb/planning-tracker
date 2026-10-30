@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกงานรายวัน & ประเมิน KPI - แผนก Planning</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header & Navigation -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2 rounded-xl">
+                    <svg class="w-7 h-7 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold">ระบบบันทึกงานรายวัน & KPI แผนก Planning</h1>
+                    <p class="text-xs text-indigo-200">บันทึกการทำงานส่วนบุคคล และประเมินผลงานอัตโนมัติ</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Admin Login Status Badge -->
+                <div class="flex items-center gap-2 bg-indigo-900/60 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs">
+                    <span id="authIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                    <span id="authText" class="font-medium text-indigo-100">โหมดพนักงานทั่วไป</span>
+                    <button onclick="toggleAuthModal()" id="authBtn" class="ml-2 bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer font-semibold">🔒 เข้าสู่ระบบแอดมิน</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <div class="bg-indigo-900/40 border-t border-indigo-500/30">
+            <div class="max-w-7xl mx-auto px-4 py-1.5 flex justify-center md:justify-start">
+                <nav class="flex flex-wrap gap-1 text-xs font-medium">
+                    <button onclick="switchTab('daily')" id="nav-daily" class="px-3 py-2 rounded-lg transition text-indigo-200 hover:text-white cursor-pointer">📅 บันทึกงานรายวัน</button>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-2 rounded-lg transition text-indigo-200 hover:text-white cursor-pointer">📊 แดชบอร์ดสรุป</button>
+                    <button onclick="switchTab('evaluation')" id="nav-evaluation" class="px-3 py-2 rounded-lg transition text-indigo-200 hover:text-white cursor-pointer">📝 สรุปผลงานรายเดือน</button>
+                    <button onclick="switchTab('matrix')" id="nav-matrix" class="px-3 py-2 rounded-lg transition text-indigo-200 hover:text-white cursor-pointer">⚙️ จัดการ KPI Matrix</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6">
+
+        <!-- TAB 1: DAILY ENTRY -->
+        <section id="tab-daily" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">📝 แบบฟอร์มบันทึกการทำงานประจำวัน</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">เลือกชื่อตนเอง วันที่ และกรอกผลการทำงานรายวัน (อนุญาตให้กรอกย้อนหลังได้ไม่เกิน 1 วัน)</p>
+                    </div>
+                    <!-- User & Date Selector -->
+                    <div class="flex flex-wrap items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-xs">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">ผู้บันทึก:</label>
+                            <select id="dailyUser" onchange="loadDailyForm()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                                <option value="หมิว">หมิว</option>
+                                <option value="เฟิน">เฟิน</option>
+                                <option value="หมิง">หมิง</option>
+                                <option value="วาวา">วาวา</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">วันที่:</label>
+                            <input type="date" id="dailyDate" onchange="validateAndLoadDailyDate()" class="bg-white border border-indigo-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Task Action Bar (Admin Only) -->
+                <div id="adminTaskActionBar" class="flex justify-between items-center mb-3 hidden">
+                    <span class="text-xs font-bold text-slate-600">รายการภาระงานประจำวัน (โหมดแอดมินแก้ไขได้):</span>
+                    <button onclick="addNewTaskRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 cursor-pointer shadow-xs">
+                        ➕ เพิ่มหัวข้องานใหม่
+                    </button>
+                </div>
+
+                <!-- Form Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-indigo-600 text-white uppercase tracking-wider text-[11px]">
+                                <th class="px-3 py-3 text-center w-28">เวลา / ช่วงเวลา</th>
+                                <th class="px-4 py-3">รายละเอียดหัวข้องาน</th>
+                                <th class="px-3 py-3 text-center w-24">ความถี่</th>
+                                <th class="px-4 py-3 text-center w-32 bg-indigo-700">ผลงานรายวันนี้ (%)</th>
+                                <th class="px-4 py-3 text-center w-28">สถานะงาน</th>
+                                <th class="px-4 py-3">หมายเหตุ / ปัญหาที่พบ</th>
+                                <th id="adminColHeader" class="px-2 py-3 text-center w-12 hidden">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyFormBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <!-- Submit Bar -->
+                <div class="mt-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p class="text-xs text-amber-700 font-medium">🔒 * ระบบไม่อนุญาตให้กรอกหรือแก้ไขข้อมูลย้อนหลังเกิน 1 วัน</p>
+                    <button onclick="saveDailyLog()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-xl shadow-xs transition text-xs flex items-center gap-2 cursor-pointer">
+                        💾 บันทึกข้อมูลการทำงานประจำวัน
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent History Log Table -->
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
+                <h3 class="text-base font-bold text-slate-800 mb-4">📋 ประวัติการบันทึกงานย้อนหลัง</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase text-[10px]">
+                                <th class="px-4 py-2.5">วันที่</th>
+                                <th class="px-4 py-2.5">พนักงาน</th>
+                                <th class="px-4 py-2.5 text-center">จำนวนหัวข้อที่บันทึก</th>
+                                <th class="px-4 py-2.5 text-center">ค่าเฉลี่ยผลงานวันนั้น</th>
+                                <th class="px-4 py-2.5 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyHistoryBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DASHBOARD -->
+        <section id="tab-dashboard" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">สรุปผลการประเมินประจำเดือน</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">ภาพรวมคะแนน KPI ของพนักงานแผนก Planning ทั้ง 4 ท่าน</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="text-xs font-semibold text-slate-600">รอบเดือน/ปี:</label>
+                    <input type="month" id="filterPeriod" onchange="updateDashboard()" value="2026-10" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-3 py-2 outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="summaryCardsContainer"></div>
+
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-sm">ตารางสรุปคะแนนประเมินรายบุคคลประจำเดือน</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 uppercase text-[10px]">
+                                <th class="px-6 py-3">พนักงาน</th>
+                                <th class="px-6 py-3">รอบเดือน/ปี</th>
+                                <th class="px-6 py-3 text-center">คะแนนรวม (เต็ม 100)</th>
+                                <th class="px-6 py-3 text-center">ระดับผลประเมิน</th>
+                                <th class="px-6 py-3 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MONTHLY EVALUATION SUMMARY -->
+        <section id="tab-evaluation" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">📝 สรุปผลงานรายเดือน</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">บันทึกผลจริง (%) สรุปภาพรวมประจำเดือนของพนักงาน</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60 mb-6">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">เลือกพนักงาน</label>
+                        <select id="evalEmployee" onchange="loadEvaluationForm()" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-medium">
+                            <option value="หมิว">หมิว</option>
+                            <option value="เฟิน">เฟิน</option>
+                            <option value="หมิง">หมิง</option>
+                            <option value="วาวา">วาวา</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">เดือน/ปี ที่ประเมิน</label>
+                        <input type="month" id="evalPeriod" value="2026-10" onchange="loadEvaluationForm()" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อผู้ประเมิน / หัวหน้างาน</label>
+                        <input type="text" id="evaluatorName" value="หัวหน้าแผนก Planning" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-medium">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-indigo-50 text-indigo-900 uppercase text-[11px]">
+                                <th class="px-3 py-3 text-center">ลำดับ</th>
+                                <th class="px-4 py-3">หัวข้อ KPI</th>
+                                <th class="px-3 py-3 text-center">น้ำหนัก (%)</th>
+                                <th class="px-3 py-3 text-center">เป้าหมาย (%)</th>
+                                <th class="px-4 py-3 text-center bg-indigo-100/60">ผลจริงสรุป (%)</th>
+                                <th class="px-4 py-3 text-center">คะแนนที่ได้</th>
+                                <th class="px-4 py-3">หมายเหตุ / แผนปรับปรุง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluationTableBody" class="divide-y divide-slate-100"></tbody>
+                        <tfoot>
+                            <tr class="bg-slate-50 font-bold text-slate-800">
+                                <td colspan="5" class="px-4 py-4 text-right">คะแนนรวมสุทธิ:</td>
+                                <td class="px-4 py-4 text-center text-indigo-700 text-lg" id="totalScoreDisplay">0.00</td>
+                                <td class="px-4 py-4 text-right">
+                                    <button onclick="saveEvaluation()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-xl transition text-xs cursor-pointer">💾 บันทึกผลสรุปรายเดือน</button>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: MATRIX MANAGEMENT -->
+        <section id="tab-matrix" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/80">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">⚙️ ข้อมูลแม่แบบโครงสร้าง KPI Matrix</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">เฉพาะแอดมินเท่านั้นที่สามารถเพิ่ม ลบ หรือแก้ไขโครงสร้าง KPI ได้</p>
+                    </div>
+                    <button id="addKpiBtn" onclick="openAddKpiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1 cursor-pointer shadow-xs hidden">
+                        ➕ เพิ่ม KPI ใหม่
+                    </button>
+                </div>
+
+                <div class="flex gap-3 mb-4">
+                    <select id="matrixFilterEmp" onchange="renderMatrixTable()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg px-3 py-2 outline-none">
+                        <option value="all">พนักงานทั้งหมด</option>
+                        <option value="หมิว">หมิว</option>
+                        <option value="เฟิน">เฟิน</option>
+                        <option value="หมิง">หมิง</option>
+                        <option value="วาวา">วาวา</option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase text-[10px]">
+                                <th class="px-4 py-3">พนักงาน</th>
+                                <th class="px-4 py-3 text-center">ลำดับ</th>
+                                <th class="px-4 py-3">หัวข้อ KPI</th>
+                                <th class="px-4 py-3 text-center w-28">น้ำหนัก (%)</th>
+                                <th class="px-4 py-3 text-center w-28">เป้าหมาย (%)</th>
+                                <th id="matrixActionHeader" class="px-4 py-3 text-center hidden">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matrixTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Admin Login -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-slate-800">🔐 เข้าสู่ระบบผู้ดูแลระบบ (Admin)</h3>
+            <p class="text-xs text-slate-500">กรุณากรอกรหัสผ่านผู้ดูแลระบบเพื่อแก้ไขสิทธิ์</p>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-600 mb-1">รหัสผ่านแอดมิน</label>
+                    <div class="relative">
+                        <input type="password" id="adminPasswordInput" onkeydown="if(event.key==='Enter')verifyAdminLogin()" class="w-full border border-slate-300 rounded-lg p-2.5 pr-12 text-xs outline-none focus:ring-2 focus:ring-indigo-500" placeholder="กรอกรหัสผ่าน">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-2 top-2 text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-600 hover:bg-slate-200">👁️ ดู</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeAuthModal()" class="px-4 py-2 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer">ยกเลิก</button>
+                <button onclick="verifyAdminLogin()" class="px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer font-semibold">ยืนยันรหัสผ่าน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding KPI -->
+    <div id="kpiModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-slate-800">เพิ่มหัวข้อ KPI ใหม่</h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-600 mb-1">พนักงาน</label>
+                    <select id="modalEmp" class="w-full border border-slate-300 rounded-lg p-2 text-xs">
+                        <option value="หมิว">หมิว</option>
+                        <option value="เฟิน">เฟิน</option>
+                        <option value="หมิง">หมิง</option>
+                        <option value="วาวา">วาวา</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-medium text-slate-600 mb-1">ลำดับที่</label>
+                        <input type="number" id="modalSeq" class="w-full border border-slate-300 rounded-lg p-2 text-xs" value="1">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-600 mb-1">น้ำหนัก (%)</label>
+                        <input type="number" id="modalWeight" class="w-full border border-slate-300 rounded-lg p-2 text-xs" value="20">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-600 mb-1">หัวข้อ KPI</label>
+                    <input type="text" id="modalTopic" class="w-full border border-slate-300 rounded-lg p-2 text-xs" placeholder="ระบุหัวข้อ KPI">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-600 mb-1">เป้าหมาย (%)</label>
+                    <input type="number" id="modalTarget" class="w-full border border-slate-300 rounded-lg p-2 text-xs" value="95">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeKpiModal()" class="px-4 py-2 text-xs bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer">ยกเลิก</button>
+                <button onclick="saveKpiMatrixItem()" class="px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAdmin = localStorage.getItem('planning_is_admin') === 'true';
+        const ADMIN_SECRET_CODE = "admin1234";
+
+        function toggleAuthModal() {
+            if (isAdmin) {
+                if (confirm('คุณต้องการออกจากระบบแอดมินใช่หรือไม่?')) {
+                    isAdmin = false;
+                    localStorage.setItem('planning_is_admin', 'false');
+                    updateAuthUI();
+                }
+            } else {
+                const modal = document.getElementById('authModal');
+                modal.classList.remove('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('adminPasswordInput').focus();
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('adminPasswordInput');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function verifyAdminLogin() {
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === ADMIN_SECRET_CODE) {
+                isAdmin = true;
+                localStorage.setItem('planning_is_admin', 'true');
+                closeAuthModal();
+                updateAuthUI();
+            } else {
+                alert('❌ รหัสผ่านแอดมินไม่ถูกต้อง!');
+            }
+        }
+
+        function updateAuthUI() {
+            const indicator = document.getElementById('authIndicator');
+            const authText = document.getElementById('authText');
+            const authBtn = document.getElementById('authBtn');
+            const adminTaskActionBar = document.getElementById('adminTaskActionBar');
+            const adminColHeader = document.getElementById('adminColHeader');
+            const addKpiBtn = document.getElementById('addKpiBtn');
+            const matrixActionHeader = document.getElementById('matrixActionHeader');
+
+            if (isAdmin) {
+                if (indicator) indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                if (authText) authText.innerText = "แอดมิน (ผู้ดูแลระบบ)";
+                if (authBtn) authBtn.innerText = "🔒 ออกจากระบบ";
+                if (adminTaskActionBar) adminTaskActionBar.classList.remove('hidden');
+                if (adminColHeader) adminColHeader.classList.remove('hidden');
+                if (addKpiBtn) addKpiBtn.classList.remove('hidden');
+                if (matrixActionHeader) matrixActionHeader.classList.remove('hidden');
+            } else {
+                if (indicator) indicator.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+                if (authText) authText.innerText = "โหมดพนักงานทั่วไป";
+                if (authBtn) authBtn.innerText = "🔓 เข้าสู่ระบบแอดมิน";
+                if (adminTaskActionBar) adminTaskActionBar.classList.add('hidden');
+                if (adminColHeader) adminColHeader.classList.add('hidden');
+                if (addKpiBtn) addKpiBtn.classList.add('hidden');
+                if (matrixActionHeader) matrixActionHeader.classList.add('hidden');
+            }
+
+            const activeSection = document.querySelector('main > section:not(.hidden)');
+            if (activeSection) {
+                const activeTab = activeSection.id.replace('tab-', '');
+                if (activeTab === 'daily') loadDailyForm();
+                if (activeTab === 'matrix') renderMatrixTable();
+            }
+        }
+
+        const defaultDailyTaskTemplates = {
+            "หมิว": [
+                { time: "8.00-9.00", task: "ส่งมอบReported as finished M315011 (ก็อกน้ำ+สุขภัณฑ์)", freq: "ทุกวัน" },
+                { time: "9.00-9.30", task: "ดึงรายงานการส่งมอบ", freq: "ทุก 1 ชม." },
+                { time: "9.30-10.00", task: "เอกสารหาแม่พิมพ์+เรียงเอกสารตามใบสั่งงานที่หาพิมพ์", freq: "ทุกวัน" },
+                { time: "10.00-10.30", task: "วางแผน PG ขั้นตอน 10+เช็ควัตถุดิบ", freq: "ตามรอบ" },
+                { time: "10.30-11.00", task: "ตรวจสอบแผนรายการค้างเบิกแผนประกอบ", freq: "ตามรอบ" },
+                { time: "11.00-12.00", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
+                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "14.00-15.00", task: "รายการซอยแผ่นประจำวัน/ปริ้นใบสั่งงาน", freq: "ตามรอบ" },
+                { time: "15.00-16.00", task: "ปรับแผนประจำวัน", freq: "ก่อนเลิกงาน" },
+                { time: "16.00-17.00", task: "วางแผนวันถัดไปหน่วยงาน AS,CM,AL,AG,AGM,PG,TS", freq: "ทุกวัน" },
+                { time: "17.00-18.00", task: "ทำเบิกอะไหล่ประกอบก๊อกน้ำ+สุขภัณฑ์", freq: "ทุกวัน" },
+                { time: "18.00-18.30", task: "ตัดPicking list", freq: "ทุกวัน" },
+                { time: "18.30-19.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ทุกวัน" }
+            ],
+            "เฟิน": [
+                { time: "8.00-8.30", task: "ส่งมอบReported as finished M315012 (ตะแกรง) M315022 (กล่อง)", freq: "ทุกวัน" },
+                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (PC, BX1, PVC, UV, CC1, SPW1, FS, FK, PS)", freq: "ทุกวัน" },
+                { time: "9.00-11.00", task: "ขอซื้อวัตถุดิบหมวด W V X ในประเทศ / ต่างประเทศ", freq: "ทุกวัน" },
+                { time: "11.00-11.15", task: "ตรวจสอบสติ๊กเกอร์บาร์โค้ต", freq: "ตามรอบ" },
+                { time: "11.15-12.00", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "13.00-13.30", task: "ตรวจสอบพนักงาน on tablet", freq: "ตามรอบ" },
+                { time: "14.00-15.00", task: "วางแผนล่วงหน้า BX PVC CC1 SPW1 PC UV", freq: "ทุกวัน" },
+                { time: "15.00-15.30", task: "เบิกกระดาษ PVC เม็ด สี ลวด", freq: "ตามรอบ" },
+                { time: "15.30-16.30", task: "ดึง ชม.ผลิต +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "16.30-17.00", task: "ส่งมอบReported as finished งานฉีดเข้าสโตร์", freq: "ทุกวัน" },
+                { time: "17.00-17.30", task: "ทำเบิกอะไหล่ประกอบตะแกรง +วางแผนล่วงหน้า PS FS FK", freq: "ตามรอบ" },
+                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "18.00 เป็นต้นไป", task: "ตัดPicking list / ส่งมอบงานผลิตในระบบ / การปรับแผนประจำวัน", freq: "ทุกวัน" }
+            ],
+            "หมิง": [
+                { time: "8.00-9.00", task: "ดึง On Tablet ของพนักงานทุกหน่วยงาน (PL, DL, HT, SU, MC, MCA, WZ)", freq: "ทุกวัน" },
+                { time: "9.00-10.00", task: "วางแผนงานล่วงหน้าแบบ Realtime ตามรุ่น FG ที่โฟกัส", freq: "ตามรอบ" },
+                { time: "10.00-11.00", task: "ติดตามหน้างานตามรายการ โฟกัส", freq: "ทุก 1 ชม." },
+                { time: "11.00-12.00", task: "ทำเบิกอะไหล่ประกอบล่วงหน้า 3 วัน", freq: "ทุกวัน" },
+                { time: "13.00-14.00", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ทุกวัน" },
+                { time: "16.30-17.00", task: "วางแผนวันถัดไปหน่วยงาน PL DL HT SU MC MCA WZ", freq: "ตามรอบ" },
+                { time: "17.00-18.00", task: "การปรับแผนประจำวัน", freq: "ทุกวัน" },
+                { time: "18.00-18.30", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "งานประจำวัน", task: "เคลียร์ PD Acc_Cost / ส่งมอบงานผลิตในระบบ ตามที่ผลิตแจ้ง", freq: "ทุกวัน" }
+            ],
+            "วาวา": [
+                { time: "8.00-8.30", task: "ส่งมอบReported as finished แผน 9 งานซ่อม", freq: "ทุกวัน" },
+                { time: "8.30-9.00", task: "ตรวจสอบพนักงาน on tablet (ML, B, CL, CT, CN)", freq: "ทุก 1 ชม." },
+                { time: "9.00-10.30", task: "วางแผนล่วงหน้า CT,CL,CB ขั้นตอน10+ตรวจสอบสูตร", freq: "ตามรอบ" },
+                { time: "10.30-11.00", task: "ทำเบิกท่อ+ตรวจสอบรายการเศษ", freq: "ตามรอบ" },
+                { time: "11.00-11.30", task: "ดึงรายงานการส่งมอบ", freq: "ตามรอบ" },
+                { time: "11.30-12.00", task: "ขอซื้อวัตถุดิบหมวด U", freq: "ทุกวัน" },
+                { time: "13.00-13.30", task: "ทำเบิกอะไหล่ประกอบแผน 9 งานซ่อม", freq: "ทุกวัน" },
+                { time: "13.30-14.30", task: "ดึง On Tablet +สุ่มตรวจสอบเวลาผลิต", freq: "ตามรอบ" },
+                { time: "14.30-16.00", task: "ใส่สูตรแผนประกอบงานซ่อม", freq: "ก่อนเลิกงาน" },
+                { time: "16.00-16.30", task: "ปริ้นใบสั่งงาน+เขียนความหนาท่อ", freq: "ตามรอบ" },
+                { time: "16.30-17.00", task: "ปรับแผนประจำวัน", freq: "ทุกวัน" },
+                { time: "17.00-17.30", task: "วางแผนวันถัดไปหน่วยงาน B ML CN DL", freq: "ทุกวัน" },
+                { time: "17.30-18.00", task: "สรุปชม.งานของแต่ละหน่วยงาน ได้เป้า/ไม่ได้เป้า/ปัญหาและสาเหตุ", freq: "ตามรอบ" },
+                { time: "18.00-18.30", task: "ประชุมท่อ กับฝ่ายผลิต+วิจัย / ตัดPicking list / ตรวจสอบเวลางานผลิต", freq: "ทุกวัน" }
+            ]
+        };
+
+        const defaultKpiMatrix = [
+            { employee: 'หมิว', seq: 1, topic: 'ติดตามสถานะงานในไลน์/On Tablet ตามรอบ', weight: 20, target: 95 },
+            { employee: 'หมิว', seq: 2, topic: 'ติดตามชั่วโมงผลิตเทียบเป้าหมาย', weight: 20, target: 100 },
+            { employee: 'หมิว', seq: 3, topic: 'ความพร้อมของแผนวันถัดไปและการปรับแผน', weight: 20, target: 95 },
+            { employee: 'หมิว', seq: 4, topic: 'ความพร้อมวัตถุดิบ/อะไหล่/Picking list', weight: 15, target: 95 },
+            { employee: 'หมิว', seq: 5, topic: 'ความถูกต้องของการส่งมอบในระบบ', weight: 15, target: 98 },
+            { employee: 'หมิว', seq: 6, topic: 'ความครบถ้วนของรายงานและการประสานงาน', weight: 10, target: 95 },
+            
+            { employee: 'เฟิน', seq: 1, topic: 'ตรวจสอบ On Tablet/สถานะกำลังคนหน่วยงาน', weight: 15, target: 95 },
+            { employee: 'เฟิน', seq: 2, topic: 'ติดตามชั่วโมงผลิตและสุ่มตรวจสอบเวลาผลิต', weight: 20, target: 100 },
+            { employee: 'เฟิน', seq: 3, topic: 'วางแผนล่วงหน้าและความพร้อมวัตถุดิบ', weight: 20, target: 95 },
+            { employee: 'เฟิน', seq: 4, topic: 'ส่งมอบงาน/Reported as finished ในระบบ', weight: 15, target: 98 },
+            { employee: 'เฟิน', seq: 5, topic: 'การเบิกวัสดุและ Picking list', weight: 15, target: 98 },
+            { employee: 'เฟิน', seq: 6, topic: 'ปรับแผนและสรุปชั่วโมง/รายงานประจำวัน', weight: 15, target: 95 },
+
+            { employee: 'หมิง', seq: 1, topic: 'ติดตามหน้างานตามรายการโฟกัสทุกชั่วโมง', weight: 25, target: 95 },
+            { employee: 'หมิง', seq: 2, topic: 'ตรวจสอบ On Tablet และสุ่มตรวจเวลาผลิต', weight: 20, target: 95 },
+            { employee: 'หมิง', seq: 3, topic: 'วางแผนล่วงหน้าแบบ Realtime ตาม FG Focus', weight: 20, target: 95 },
+            { employee: 'หมิง', seq: 4, topic: 'ติดตามชั่วโมงผลิตเทียบเป้าหมายและวิเคราะห์สาเหตุ', weight: 15, target: 100 },
+            { employee: 'หมิง', seq: 5, topic: 'แผนวันถัดไปและความพร้อมอะไหล่ประกอบ', weight: 10, target: 95 },
+            { employee: 'หมิง', seq: 6, topic: 'ความถูกต้องของข้อมูลระบบ/การเคลียร์ PD Acc_Cost', weight: 10, target: 98 },
+
+            { employee: 'วาวา', seq: 1, topic: 'ติดตาม On Tablet และสถานะงานหน่วยงานที่รับผิดชอบ', weight: 20, target: 95 },
+            { employee: 'วาวา', seq: 2, topic: 'ติดตามชั่วโมงผลิตและสุ่มตรวจสอบเวลาผลิต', weight: 15, target: 100 },
+            { employee: 'วาวา', seq: 3, topic: 'วางแผน CT/CL/CB และตรวจสอบสูตร', weight: 20, target: 95 },
+            { employee: 'วาวา', seq: 4, topic: 'ความพร้อมท่อ วัตถุดิบ อะไหล่ และ Picking list', weight: 15, target: 95 },
+            { employee: 'วาวา', seq: 5, topic: 'ปรับแผนและจัดทำแผนวันถัดไป', weight: 10, target: 95 },
+            { employee: 'วาวา', seq: 6, topic: 'ส่งมอบงานในระบบ/Reported as finished', weight: 10, target: 98 },
+            { employee: 'วาวา', seq: 7, topic: 'ประสานงานท่อกับฝ่ายผลิตและวิจัย', weight: 10, target: 95 }
+        ];
+
+        let dailyTaskTemplates = JSON.parse(localStorage.getItem('planning_daily_templates')) || defaultDailyTaskTemplates;
+        let kpiMatrix = JSON.parse(localStorage.getItem('planning_kpi_matrix')) || defaultKpiMatrix;
+        let evaluations = JSON.parse(localStorage.getItem('planning_evaluations')) || {};
+        let dailyLogs = JSON.parse(localStorage.getItem('planning_daily_logs')) || {};
+
+        function switchTab(tabId) {
+            ['daily', 'dashboard', 'evaluation', 'matrix'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if(el) el.classList.add('hidden');
+                if(nav) {
+                    nav.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs', 'font-semibold');
+                    nav.classList.add('text-indigo-200');
+                }
+            });
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+            if(targetTab) targetTab.classList.remove('hidden');
+            if(targetNav) {
+                targetNav.classList.add('bg-white', 'text-indigo-700', 'shadow-xs', 'font-semibold');
+                targetNav.classList.remove('text-indigo-200');
+            }
+
+            if (tabId === 'daily') loadDailyForm();
+            if (tabId === 'dashboard') updateDashboard();
+            if (tabId === 'evaluation') loadEvaluationForm();
+            if (tabId === 'matrix') renderMatrixTable();
+        }
+
+        function setDateLimits() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const todayStr = today.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            const dateInput = document.getElementById('dailyDate');
+            if (dateInput) {
+                dateInput.min = yesterdayStr;
+                dateInput.max = todayStr;
+                if (!dateInput.value || dateInput.value < yesterdayStr || dateInput.value > todayStr) {
+                    dateInput.value = todayStr;
+                }
+            }
+        }
+
+        function validateAndLoadDailyDate() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const todayStr = today.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const selectedDate = document.getElementById('dailyDate').value;
+
+            if (selectedDate < yesterdayStr) {
+                alert('🔒 ไม่อนุญาตให้กรอกหรือแก้ไขข้อมูลย้อนหลังเกิน 1 วัน');
+                document.getElementById('dailyDate').value = todayStr;
+            } else if (selectedDate > todayStr) {
+                alert('⚠️ ไม่สามารถเลือกวันที่ล่วงหน้าได้');
+                document.getElementById('dailyDate').value = todayStr;
+            }
+            loadDailyForm();
+        }
+
+        function loadDailyForm() {
+            const user = document.getElementById('dailyUser').value;
+            const date = document.getElementById('dailyDate').value;
+            const key = `${user}_${date}`;
+            const savedData = dailyLogs[key] || {};
+
+            const tasks = dailyTaskTemplates[user] || [];
+            const tbody = document.getElementById('dailyFormBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (tasks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">ยังไม่มีรายการงานประจำวัน</td></tr>`;
+                return;
+            }
+
+            tasks.forEach((t, index) => {
+                const item = savedData[t.task] || { actual: '', status: 'เรียบร้อย', note: '' };
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50" data-index="${index}">
+                        <td class="px-2 py-2 text-center font-bold text-indigo-700">
+                            ${isAdmin ? `<input type="text" value="${t.time}" onchange="updateTaskMeta('${user}', ${index}, 'time', this.value)" class="w-full text-center bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-0.5">` : t.time}
+                        </td>
+                        <td class="px-3 py-2 font-semibold text-slate-800">
+                            ${isAdmin ? `<input type="text" value="${t.task}" onchange="updateTaskMeta('${user}', ${index}, 'task', this.value)" class="task-title-input w-full bg-transparent border border-transparent hover:border-slate-300 rounded px-1.5 py-0.5">` : `<span class="task-title-input">${t.task}</span>`}
+                        </td>
+                        <td class="px-2 py-2 text-center text-slate-600">
+                            ${isAdmin ? `<input type="text" value="${t.freq}" onchange="updateTaskMeta('${user}', ${index}, 'freq', this.value)" class="w-full text-center bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-0.5">` : t.freq}
+                        </td>
+                        <td class="px-4 py-2 text-center bg-indigo-50/40">
+                            <input type="number" min="0" max="100" value="${item.actual}" class="daily-actual w-20 text-center bg-white border border-slate-300 rounded-md py-1 text-xs font-bold text-indigo-700" placeholder="0-100">
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <select class="daily-status bg-white border border-slate-300 rounded-md py-1 px-1.5 text-xs cursor-pointer">
+                                <option value="เรียบร้อย" ${item.status === 'เรียบร้อย' ? 'selected' : ''}>✅ เรียบร้อย</option>
+                                <option value="มีปัญหา/ล่าช้า" ${item.status === 'มีปัญหา/ล่าช้า' ? 'selected' : ''}>⚠️ ล่าช้า/มีปัญหา</option>
+                                <option value="ไม่ได้ทำ/ติดงานอื่น" ${item.status === 'ไม่ได้ทำ/ติดงานอื่น' ? 'selected' : ''}>❌ ไม่ได้ทำ</option>
+                            </select>
+                        </td>
+                        <td class="px-3 py-2">
+                            <input type="text" value="${item.note}" class="daily-note w-full bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs" placeholder="บันทึกรายละเอียด / ปัญหา / สาเหตุ">
+                        </td>
+                        ${isAdmin ? `<td class="px-2 py-2 text-center"><button onclick="removeTaskRow('${user}', ${index})" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition cursor-pointer" title="ลบหัวข้อ">🗑️</button></td>` : ''}
+                    </tr>
+                `;
+            });
+            loadDailyHistory();
+        }
+
+        function addNewTaskRow() {
+            if (!isAdmin) return;
+            const user = document.getElementById('dailyUser').value;
+            if (!dailyTaskTemplates[user]) dailyTaskTemplates[user] = [];
+            dailyTaskTemplates[user].push({ time: "ตามช่วงเวลา", task: "ระบุหัวข้องานใหม่", freq: "ทุกวัน" });
+            localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
+            loadDailyForm();
+        }
+
+        function removeTaskRow(user, index) {
+            if (!isAdmin) return;
+            if (confirm('คุณต้องการลบหัวข้องานนี้ใช่หรือไม่?')) {
+                dailyTaskTemplates[user].splice(index, 1);
+                localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
+                loadDailyForm();
+            }
+        }
+
+        function updateTaskMeta(user, index, key, value) {
+            if (!isAdmin) return;
+            if (dailyTaskTemplates[user] && dailyTaskTemplates[user][index]) {
+                dailyTaskTemplates[user][index][key] = value;
+                localStorage.setItem('planning_daily_templates', JSON.stringify(dailyTaskTemplates));
+            }
+        }
+
+        function saveDailyLog() {
+            const user = document.getElementById('dailyUser').value;
+            const date = document.getElementById('dailyDate').value;
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (!isAdmin && date < yesterdayStr) {
+                alert('🔒 ไม่สามารถบันทึกข้อมูลย้อนหลังเกิน 1 วันได้');
+                return;
+            }
+
+            const key = `${user}_${date}`;
+            let dayRecord = {};
+
+            document.querySelectorAll('#dailyFormBody tr').forEach(row => {
+                const titleEl = row.querySelector('.task-title-input');
+                if (titleEl) {
+                    const task = titleEl.value || titleEl.innerText;
+                    const actual = row.querySelector('.daily-actual').value;
+                    const status = row.querySelector('.daily-status').value;
+                    const note = row.querySelector('.daily-note').value;
+                    dayRecord[task] = { actual, status, note };
+                }
+            });
+
+            dailyLogs[key] = dayRecord;
+            localStorage.setItem('planning_daily_logs', JSON.stringify(dailyLogs));
+            alert(`บันทึกข้อมูลการทำงานประจำวันที่ ${date} ของคุณ${user} เรียบร้อยแล้ว!`);
+            loadDailyHistory();
+        }
+
+        function loadDailyHistory() {
+            const user = document.getElementById('dailyUser').value;
+            const tbody = document.getElementById('dailyHistoryBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            const userKeys = Object.keys(dailyLogs).filter(k => k.startsWith(`${user}_`)).sort().reverse();
+            if (userKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-400">ยังไม่มีประวัติการบันทึกงานของ ${user}</td></tr>`;
+                return;
+            }
+
+            userKeys.forEach(key => {
+                const [emp, date] = key.split('_');
+                const log = dailyLogs[key];
+                const tasks = Object.keys(log);
+
+                let totalActual = 0;
+                let count = 0;
+                tasks.forEach(t => {
+                    if (log[t].actual !== '') {
+                        totalActual += parseFloat(log[t].actual);
+                        count++;
+                    }
+                });
+
+                const avgActual = count > 0 ? (totalActual / count).toFixed(1) : '-';
+                const isEditable = isAdmin || (date >= yesterdayStr);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-2 font-medium text-slate-800">${date} ${!isEditable ? '<span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-normal">🔒 ล็อกแล้ว</span>' : ''}</td>
+                        <td class="px-4 py-2">${emp}</td>
+                        <td class="px-4 py-2 text-center">${count} / ${tasks.length} หัวข้อ</td>
+                        <td class="px-4 py-2 text-center font-bold text-indigo-600">${avgActual}%</td>
+                        <td class="px-4 py-2 text-center">
+                            ${isEditable ? `<button onclick="editDailyLog('${date}')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md text-[11px] cursor-pointer">✏️ แก้ไข</button>` : `<span class="text-slate-400 text-[11px]">ล็อกแล้ว</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editDailyLog(dateStr) {
+            document.getElementById('dailyDate').value = dateStr;
+            validateAndLoadDailyDate();
+        }
+
+        // --- KPI MATRIX MANAGEMENT (EDIT WEIGHT, TARGET, TOPIC) ---
+        function renderMatrixTable() {
+            const filterEmpEl = document.getElementById('matrixFilterEmp');
+            const filterEmp = filterEmpEl ? filterEmpEl.value : 'all';
+            const tbody = document.getElementById('matrixTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            kpiMatrix.forEach((kpi, index) => {
+                if (filterEmp !== 'all' && kpi.employee !== filterEmp) return;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-semibold text-slate-800">${kpi.employee}</td>
+                        <td class="px-4 py-3 text-center text-slate-500">${kpi.seq}</td>
+                        <td class="px-4 py-3 font-medium text-slate-800">
+                            ${isAdmin ? `<input type="text" value="${kpi.topic}" onchange="updateKpiMatrixMeta(${index}, 'topic', this.value)" class="w-full bg-transparent border border-transparent hover:border-slate-300 rounded px-1.5 py-0.5">` : kpi.topic}
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold text-indigo-600">
+                            ${isAdmin ? `<input type="number" min="0" max="100" value="${kpi.weight}" onchange="updateKpiMatrixMeta(${index}, 'weight', parseFloat(this.value)||0)" class="w-20 text-center font-bold text-indigo-600 bg-white border border-slate-300 rounded px-1 py-1">` : `${kpi.weight}%`}
+                        </td>
+                        <td class="px-4 py-3 text-center text-slate-600">
+                            ${isAdmin ? `<input type="number" min="0" max="100" value="${kpi.target}" onchange="updateKpiMatrixMeta(${index}, 'target', parseFloat(this.value)||0)" class="w-20 text-center text-slate-700 bg-white border border-slate-300 rounded px-1 py-1">` : `${kpi.target}%`}
+                        </td>
+                        ${isAdmin ? `<td class="px-4 py-3 text-center"><button onclick="deleteKpiMatrixItem(${index})" class="text-rose-500 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md text-[11px] cursor-pointer">🗑️ ลบ</button></td>` : ''}
+                    </tr>
+                `;
+            });
+        }
+
+        function updateKpiMatrixMeta(index, field, value) {
+            if (!isAdmin) return;
+            if (kpiMatrix[index]) {
+                kpiMatrix[index][field] = value;
+                localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+            }
+        }
+
+        function openAddKpiModal() {
+            if (!isAdmin) return;
+            document.getElementById('modalTopic').value = '';
+            document.getElementById('modalSeq').value = '1';
+            document.getElementById('modalWeight').value = '20';
+            document.getElementById('modalTarget').value = '95';
+            document.getElementById('kpiModal').classList.remove('hidden');
+        }
+
+        function closeKpiModal() {
+            document.getElementById('kpiModal').classList.add('hidden');
+        }
+
+        function saveKpiMatrixItem() {
+            if (!isAdmin) return;
+            const employee = document.getElementById('modalEmp').value;
+            const seq = parseInt(document.getElementById('modalSeq').value) || 1;
+            const weight = parseFloat(document.getElementById('modalWeight').value) || 0;
+            const topic = document.getElementById('modalTopic').value;
+            const target = parseFloat(document.getElementById('modalTarget').value) || 95;
+
+            if (!topic) {
+                alert('กรุณากรอกหัวข้อ KPI');
+                return;
+            }
+
+            kpiMatrix.push({ employee, seq, topic, weight, target });
+            localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+            closeKpiModal();
+            renderMatrixTable();
+            alert('เพิ่มหัวข้อ KPI สำเร็จ!');
+        }
+
+        function deleteKpiMatrixItem(index) {
+            if (!isAdmin) return;
+            if (confirm('คุณต้องการลบหัวข้อ KPI นี้ใช่หรือไม่?')) {
+                kpiMatrix.splice(index, 1);
+                localStorage.setItem('planning_kpi_matrix', JSON.stringify(kpiMatrix));
+                renderMatrixTable();
+            }
+        }
+
+        function calculateScore(actual, target, weight) {
+            if (actual === '' || actual === null || isNaN(actual)) return null;
+            let score = Math.min((parseFloat(actual) / target), 1.0) * weight;
+            return Math.round(score * 100) / 100;
+        }
+
+        function getGradeInfo(score) {
+            if (score === null) return { text: 'รอกรอกผลจริง', color: 'bg-slate-100 text-slate-600' };
+            if (score >= 95) return { text: 'ดีเยี่ยม', color: 'bg-emerald-50 text-emerald-700 font-semibold' };
+            if (score >= 90) return { text: 'ดี', color: 'bg-blue-50 text-blue-700 font-semibold' };
+            if (score >= 80) return { text: 'ต้องพัฒนา', color: 'bg-amber-50 text-amber-700 font-semibold' };
+            return { text: 'ต้องเร่งปรับปรุง', color: 'bg-rose-50 text-rose-700 font-semibold' };
+        }
+
+        function updateDashboard() {
+            const period = document.getElementById('filterPeriod').value;
+            const employees = ['หมิว', 'เฟิน', 'หมิง', 'วาวา'];
+            let summaryData = [];
+            let totalDeptScore = 0;
+            let evaluatedCount = 0;
+
+            employees.forEach(emp => {
+                const key = `${emp}_${period}`;
+                const evalRecord = evaluations[key];
+                let empScore = null;
+
+                if (evalRecord && evalRecord.items) {
+                    let sum = 0;
+                    let hasVal = false;
+                    evalRecord.items.forEach(item => {
+                        if (item.actual !== '' && item.actual !== null) {
+                            let s = calculateScore(item.actual, item.target, item.weight);
+                            if (s !== null) sum += s;
+                            hasVal = true;
+                        }
+                    });
+                    if (hasVal) {
+                        empScore = Math.round(sum * 100) / 100;
+                        totalDeptScore += empScore;
+                        evaluatedCount++;
+                    }
+                }
+                summaryData.push({ employee: emp, score: empScore, period: period });
+            });
+
+            const avgScore = evaluatedCount > 0 ? (totalDeptScore / evaluatedCount).toFixed(2) : '0.00';
+            const cardsContainer = document.getElementById('summaryCardsContainer');
+            if(cardsContainer) {
+                cardsContainer.innerHTML = `
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">คะแนนเฉลี่ยแผนก</p>
+                        <h4 class="text-2xl font-extrabold text-indigo-700 mt-1">${avgScore} <span class="text-xs text-slate-400 font-normal">/ 100</span></h4>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">ประเมินแล้ว</p>
+                        <h4 class="text-2xl font-extrabold text-slate-800 mt-1">${evaluatedCount} <span class="text-xs text-slate-400 font-normal">/ 4 ท่าน</span></h4>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">รอบเดือน</p>
+                        <h4 class="text-xl font-bold text-slate-800 mt-1">${period}</h4>
+                    </div>
+                `;
+            }
+
+            const tbody = document.getElementById('summaryTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            summaryData.forEach(item => {
+                const grade = getGradeInfo(item.score);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-3.5 font-semibold text-slate-800">${item.employee}</td>
+                        <td class="px-6 py-3.5 text-slate-600">${item.period}</td>
+                        <td class="px-6 py-3.5 text-center font-bold text-slate-800">${item.score !== null ? item.score : '-'}</td>
+                        <td class="px-6 py-3.5 text-center"><span class="px-3 py-1 text-xs rounded-full ${grade.color}">${grade.text}</span></td>
+                        <td class="px-6 py-3.5 text-center">
+                            <button onclick="quickEditEval('${item.employee}', '${item.period}')" class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-md text-xs font-semibold cursor-pointer">✏️ ตรวจสอบ/ประเมิน</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function quickEditEval(emp, period) {
+            document.getElementById('evalEmployee').value = emp;
+            document.getElementById('evalPeriod').value = period;
+            switchTab('evaluation');
+        }
+
+        function loadEvaluationForm() {
+            const emp = document.getElementById('evalEmployee').value;
+            const period = document.getElementById('evalPeriod').value;
+            const key = `${emp}_${period}`;
+            const evalRecord = evaluations[key] || { items: [] };
+
+            const kpis = kpiMatrix.filter(k => k.employee === emp);
+            const tbody = document.getElementById('evaluationTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            kpis.forEach(kpi => {
+                let savedItem = evalRecord.items ? evalRecord.items.find(i => i.topic === kpi.topic) : null;
+                let actualVal = savedItem ? savedItem.actual : '';
+                let remarkVal = savedItem ? savedItem.remark : '';
+                let score = calculateScore(actualVal, kpi.target, kpi.weight);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50" data-topic="${kpi.topic}" data-weight="${kpi.weight}" data-target="${kpi.target}">
+                        <td class="px-3 py-3 text-center text-slate-500">${kpi.seq}</td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">${kpi.topic}</td>
+                        <td class="px-3 py-3 text-center text-indigo-600 font-bold">${kpi.weight}%</td>
+                        <td class="px-3 py-3 text-center text-slate-600">${kpi.target}%</td>
+                        <td class="px-4 py-3 text-center bg-indigo-50/30">
+                            <input type="number" min="0" max="100" value="${actualVal}" oninput="recalculateForm()" class="actual-input w-20 text-center bg-white border border-slate-300 rounded-md py-1 text-xs font-bold text-slate-800">
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold text-indigo-700 score-cell">${score !== null ? score : '-'}</td>
+                        <td class="px-4 py-3">
+                            <input type="text" value="${remarkVal}" class="remark-input w-full bg-white border border-slate-300 rounded-md px-2.5 py-1 text-xs" placeholder="ระบุหมายเหตุ / แผนปรับปรุง">
+                        </td>
+                    </tr>
+                `;
+            });
+            recalculateForm();
+        }
+
+        function recalculateForm() {
+            let totalScore = 0;
+            let hasAnyValue = false;
+            document.querySelectorAll('#evaluationTableBody tr').forEach(row => {
+                const weight = parseFloat(row.dataset.weight);
+                const target = parseFloat(row.dataset.target);
+                const actualInput = row.querySelector('.actual-input').value;
+                const scoreCell = row.querySelector('.score-cell');
+
+                if (actualInput !== '' && !isNaN(actualInput)) {
+                    let sc = calculateScore(actualInput, target, weight);
+                    if(scoreCell) scoreCell.innerText = sc;
+                    totalScore += sc;
+                    hasAnyValue = true;
+                } else {
+                    if(scoreCell) scoreCell.innerText = '-';
+                }
+            });
+            const totalDisplay = document.getElementById('totalScoreDisplay');
+            if(totalDisplay) totalDisplay.innerText = hasAnyValue ? Math.round(totalScore * 100) / 100 : '0.00';
+        }
+
+        function saveEvaluation() {
+            const emp = document.getElementById('evalEmployee').value;
+            const period = document.getElementById('evalPeriod').value;
+            const evaluator = document.getElementById('evaluatorName').value;
+            const key = `${emp}_${period}`;
+
+            let items = [];
+            document.querySelectorAll('#evaluationTableBody tr').forEach(row => {
+                items.push({
+                    topic: row.dataset.topic,
+                    weight: parseFloat(row.dataset.weight),
+                    target: parseFloat(row.dataset.target),
+                    actual: row.querySelector('.actual-input').value,
+                    remark: row.querySelector('.remark-input').value
+                });
+            });
+
+            evaluations[key] = { evaluator, items };
+            localStorage.setItem('planning_evaluations', JSON.stringify(evaluations));
+            alert(`บันทึกผลสรุปรายเดือนของ ${emp} ประจำเดือน ${period} เรียบร้อยแล้ว!`);
+            switchTab('dashboard');
+        }
+
+        window.onload = function() {
+            setDateLimits();
+            updateAuthUI();
+            switchTab('matrix');
+        };
+    </script>
+</body>
+</html>
